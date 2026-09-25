@@ -7,7 +7,7 @@
 > You need to download the latest version of [**Cheat Engine**](https://www.cheatengine.org/downloads.php) and the latest LTS version of [**Node.js**](https://nodejs.org)!
 #
 # **Setup**
-## 1. Download the latest [**release**](https://github.com/devPoland/EldenRingChaosMod/releases) and take the folder inside the .zip outside it.
+## 1. Download the latest [**release**](https://github.com/devPoland/EldenRingChaosMod/releases](https://github.com/lunarafael/EldenRingChaosMod/releases) and take the folder inside the .zip outside it.
 ## 2. Run the **config.bat** from the **Cheat Engine** folder, and adjust the settings, mainly set the channel name.
 ## 3. In OBS, add a browser source the recommended res is **1920x1080** and then cut however you like, the URL should be **http://localhost:8008**.
 ## 4. Run the **start.bat** inside the same folder, everything should open just fine.
