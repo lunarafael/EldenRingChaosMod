@@ -71,4 +71,10 @@ Teleport to random grace
 -5 or +5 to Faith
 -5 or +5 to Arcane
 SPAWN A FRIENDLY DOG
+Teleport to the sky
+Horse bomb
+Inverted controls
+Healing damages player
+Russian Roulete
+Deathly jumping
 ```

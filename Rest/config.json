@@ -280,6 +280,41 @@
             "chance": 10,
             "basechance": 10,
             "enabled": true
+        },
+        "Sky Launch": {
+            "chance": 50,
+            "basechance": 50,
+            "enabled": true
+        },
+        "Horse Bomb": {
+            "chance": 45,
+            "basechance": 45,
+            "enabled": true
+        },
+        "Inverted Camera": {
+            "chance": 80,
+            "basechance": 80,
+            "enabled": true
+        },
+        "Forbidden Healing": {
+            "chance": 35,
+            "basechance": 35,
+            "enabled": true
+        },
+        "No FP": {
+            "chance": 80,
+            "basechance": 80,
+            "enabled": true
+        },
+        "Russian Roulette": {
+            "chance": 25,
+            "basechance": 25,
+            "enabled": true
+        },
+        "Deadly Bounce": {
+            "chance": 45,
+            "basechance": 45,
+            "enabled": true
         }
     }
 }

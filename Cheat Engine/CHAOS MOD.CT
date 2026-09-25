@@ -49455,6 +49455,335 @@ print("Random warp script disabled")
                 </Hotkey>
               </Hotkeys>
             </CheatEntry>
+            <CheatEntry>
+              <ID>1987710001</ID>
+              <Description>"]SKY LAUNCH"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+local zRecord = getAddressList().getMemoryRecordByID(1337257873)
+local zAddress = zRecord and zRecord.getCurrentAddress()
+
+if zAddress and zAddress ~= 0 then
+    local currentZ = readFloat(zAddress)
+    if currentZ then
+        writeFloat(zAddress, currentZ + 100.0)
+        print("Chaos Mod: player launched into the sky")
+    end
+else
+    print("Chaos Mod: Z coordinate is unavailable")
+end
+
+disableMemrec(memrec)
+{$asm}
+
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>51</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710002</ID>
+              <Description>"]HORSE BOMB"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+local horseRecord = getAddressList().getMemoryRecordByID(1337304903)
+local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
+local horseXRecord = getAddressList().getMemoryRecordByID(1337209831)
+
+if horseRecord and tonumber(horseRecord.Value) == 1 then
+    local horseXAddress = horseXRecord and horseXRecord.getCurrentAddress()
+    if horseXAddress and horseXAddress ~= 0 then
+        -- Horse_X is +0x70 in ChrRideModule; HorseHP is +0x12C.
+        writeInteger(horseXAddress + 0xBC, 0)
+    end
+
+    local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+    if hpAddress and hpAddress ~= 0 then
+        writeInteger(hpAddress, 0)
+    end
+
+    print("Chaos Mod: horse bomb detonated")
+else
+    print("Chaos Mod: player is not mounted")
+end
+
+disableMemrec(memrec)
+{$asm}
+
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>52</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710003</ID>
+              <Description>"]INVERTED CAMERA"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+chaosCameraOriginal = {}
+local cameraRecordIds = {1337218114, 1337218115}
+
+for _, recordId in ipairs(cameraRecordIds) do
+    local record = getAddressList().getMemoryRecordByID(recordId)
+    local address = record and record.getCurrentAddress()
+    if address and address ~= 0 then
+        local value = readBytes(address, 1, false)
+        if value ~= nil then
+            chaosCameraOriginal[recordId] = value
+            writeBytes(address, value == 0 and 1 or 0)
+        end
+    end
+end
+
+print("Chaos Mod: camera inverted")
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+
+if chaosCameraOriginal then
+    for recordId, value in pairs(chaosCameraOriginal) do
+        local record = getAddressList().getMemoryRecordByID(recordId)
+        local address = record and record.getCurrentAddress()
+        if address and address ~= 0 then
+            writeBytes(address, value)
+        end
+    end
+end
+
+chaosCameraOriginal = nil
+print("Chaos Mod: camera restored")
+{$asm}
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>53</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710004</ID>
+              <Description>"]FORBIDDEN HEALING"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+if chaosForbiddenHealTimer then
+    chaosForbiddenHealTimer.destroy()
+    chaosForbiddenHealTimer = nil
+end
+
+local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
+local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+
+if hpAddress and hpAddress ~= 0 then
+    chaosForbiddenHealLastHp = readInteger(hpAddress)
+    chaosForbiddenHealTimer = createTimer(nil)
+    chaosForbiddenHealTimer.Interval = 100
+    chaosForbiddenHealTimer.OnTimer = function(timer)
+        local currentAddress = hpRecord.getCurrentAddress()
+        local currentHp = currentAddress and readInteger(currentAddress)
+
+        if currentHp and chaosForbiddenHealLastHp and currentHp &gt; chaosForbiddenHealLastHp and currentHp &gt; 0 then
+            writeInteger(currentAddress, 0)
+            print("Chaos Mod: tried to heal and died")
+            timer.destroy()
+            chaosForbiddenHealTimer = nil
+        else
+            chaosForbiddenHealLastHp = currentHp
+        end
+    end
+    chaosForbiddenHealTimer.Enabled = true
+else
+    print("Chaos Mod: HP is unavailable")
+end
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+
+if chaosForbiddenHealTimer then
+    chaosForbiddenHealTimer.destroy()
+    chaosForbiddenHealTimer = nil
+end
+chaosForbiddenHealLastHp = nil
+{$asm}
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>54</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710005</ID>
+              <Description>"]NO FP"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+local fpRecord = getAddressList().getMemoryRecordByID(1337192614)
+local fpAddress = fpRecord and fpRecord.getCurrentAddress()
+
+if fpAddress and fpAddress ~= 0 then
+    writeInteger(fpAddress, 0)
+    print("Chaos Mod: FP drained")
+else
+    print("Chaos Mod: FP is unavailable")
+end
+
+disableMemrec(memrec)
+{$asm}
+
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>55</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710006</ID>
+              <Description>"]RUSSIAN ROULETTE"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+math.randomseed(os.time() + getTickCount())
+local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
+local fpRecord = getAddressList().getMemoryRecordByID(1337192614)
+local spRecord = getAddressList().getMemoryRecordByID(1337192615)
+
+if math.random(1, 3) == 1 then
+    local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+    if hpAddress and hpAddress ~= 0 then
+        writeInteger(hpAddress, 0)
+        print("Chaos Mod: BANG!")
+    end
+else
+    local fpAddress = fpRecord and fpRecord.getCurrentAddress()
+    local spAddress = spRecord and spRecord.getCurrentAddress()
+    if fpAddress and fpAddress ~= 0 then writeInteger(fpAddress, 0) end
+    if spAddress and spAddress ~= 0 then writeInteger(spAddress, 0) end
+    print("Chaos Mod: click... survived, but lost FP and stamina")
+end
+
+disableMemrec(memrec)
+{$asm}
+
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>56</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710007</ID>
+              <Description>"]DEADLY BOUNCE"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+if chaosBouncyTimer then
+    chaosBouncyTimer.destroy()
+    chaosBouncyTimer = nil
+end
+
+local zRecord = getAddressList().getMemoryRecordByID(1337257873)
+local function launchPlayer()
+    local zAddress = zRecord and zRecord.getCurrentAddress()
+    if zAddress and zAddress ~= 0 then
+        local currentZ = readFloat(zAddress)
+        if currentZ then writeFloat(zAddress, currentZ + 35.0) end
+    end
+end
+
+launchPlayer()
+chaosBouncyTimer = createTimer(nil)
+chaosBouncyTimer.Interval = 3500
+chaosBouncyTimer.OnTimer = function()
+    launchPlayer()
+end
+chaosBouncyTimer.Enabled = true
+print("Chaos Mod: deadly bounce enabled")
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+
+if chaosBouncyTimer then
+    chaosBouncyTimer.destroy()
+    chaosBouncyTimer = nil
+end
+print("Chaos Mod: deadly bounce disabled")
+{$asm}
+</AssemblerScript>
+              <Hotkeys>
+                <Hotkey>
+                  <Action>Toggle Activation</Action>
+                  <Keys>
+                    <Key>135</Key>
+                    <Key>57</Key>
+                  </Keys>
+                  <ID>0</ID>
+                </Hotkey>
+              </Hotkeys>
+            </CheatEntry>
           </CheatEntries>
         </CheatEntry>
         <CheatEntry>

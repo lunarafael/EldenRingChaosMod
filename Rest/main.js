@@ -158,6 +158,11 @@ function broadcastState() {
 }
 
 let isKeyActive = false;
+function toggleKeyForRound(keys) {
+    ks.sendCombination(keys);
+    setTimeout(() => ks.sendCombination(keys), 29000);
+}
+
 function processKeypresses(actionname) {
     if (actionname === "Ultra Speed"){
         ks.startBatch()
@@ -554,6 +559,27 @@ function processKeypresses(actionname) {
             .batchTypeCombination(['F18', '3'], 5000)
             .batchTypeCombination(['F18', '3'])
         .sendBatch()
+
+    }else if(actionname === "Sky Launch"){
+        ks.sendCombination(['F24', '3']);
+
+    }else if(actionname === "Horse Bomb"){
+        ks.sendCombination(['F24', '4']);
+
+    }else if(actionname === "Inverted Camera"){
+        toggleKeyForRound(['F24', '5']);
+
+    }else if(actionname === "Forbidden Healing"){
+        toggleKeyForRound(['F24', '6']);
+
+    }else if(actionname === "No FP"){
+        ks.sendCombination(['F24', '7']);
+
+    }else if(actionname === "Russian Roulette"){
+        ks.sendCombination(['F24', '8']);
+
+    }else if(actionname === "Deadly Bounce"){
+        toggleKeyForRound(['F24', '9']);
 
     }
 
