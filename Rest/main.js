@@ -560,26 +560,59 @@ function processKeypresses(actionname) {
             .batchTypeCombination(['F18', '3'])
         .sendBatch()
 
-    }else if(actionname === "Sky Launch"){
-        ks.sendCombination(['F24', '3']);
-
     }else if(actionname === "Horse Bomb"){
         ks.sendCombination(['F24', '4']);
 
-    }else if(actionname === "Inverted Camera"){
+    }else if(actionname === "Invert Camera Control"){
         toggleKeyForRound(['F24', '5']);
 
     }else if(actionname === "Forbidden Healing"){
         toggleKeyForRound(['F24', '6']);
 
-    }else if(actionname === "No FP"){
-        ks.sendCombination(['F24', '7']);
-
-    }else if(actionname === "Russian Roulette"){
-        ks.sendCombination(['F24', '8']);
-
     }else if(actionname === "Deadly Bounce"){
         toggleKeyForRound(['F24', '9']);
+
+    }else if(actionname === "Spawn Godrick"){
+        ks.sendCombination(['F17', '6']);
+
+    }else if(actionname === "Spawn Godfrey"){
+        ks.sendCombination(['F17', '7']);
+
+    }else if(actionname === "Spawn Mohg"){
+        ks.sendCombination(['F17', '8']);
+
+    }else if(actionname === "Spawn Placidusax"){
+        ks.sendCombination(['F17', '9']);
+
+    }else if(actionname === "Minimum Brightness"){
+        toggleKeyForRound(['F18', '4']);
+
+    }else if(actionname === "Scrambled Buttons"){
+        toggleKeyForRound(['F18', '5']);
+
+    }else if(actionname === "Spawn 2 Golems"){
+        ks.sendCombination(['F18', '6']);
+
+    }else if(actionname === "Hostile Invaders"){
+        ks.sendCombination(['F18', '7']);
+
+    }else if(actionname === "Pot Enemies"){
+        ks.sendCombination(['F18', '8']);
+
+    }else if(actionname === "Roll Tax"){
+        toggleKeyForRound(['F18', '9']);
+
+    }else if(actionname === "Pacifist Player"){
+        toggleKeyForRound(['F19', '1']);
+
+    }else if(actionname === "Spawn 3 Albinaurics"){
+        ks.sendCombination(['F19', '2']);
+
+    }else if(actionname === "Surprise Patches"){
+        ks.sendCombination(['F19', '3']);
+
+    }else if(actionname === "Damage Teleport"){
+        toggleKeyForRound(['F19', '4']);
 
     }
 

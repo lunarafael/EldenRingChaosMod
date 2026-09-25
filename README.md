@@ -71,10 +71,22 @@ Teleport to random grace
 -5 or +5 to Faith
 -5 or +5 to Arcane
 SPAWN A FRIENDLY DOG
-Teleport to the sky
-Horse bomb
-Inverted controls
-Healing damages player
-Russian Roulete
-Deathly jumping
+Horse Bomb
+Invert Camera Control
+Forbidden Healing
+Deadly Bounce
+Spawn Godrick
+Spawn Godfrey
+Spawn Mohg
+Spawn Placidusax
+Minimum Brightness
+Scrambled Buttons
+Spawn 2 Golems
+Hostile Invaders
+Pot Enemies
+Roll Tax
+Pacifist Player
+Spawn 3 Albinaurics
+Surprise Patches
+Damage Teleport
 ```

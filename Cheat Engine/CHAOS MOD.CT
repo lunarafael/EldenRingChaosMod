@@ -49456,43 +49456,6 @@ print("Random warp script disabled")
               </Hotkeys>
             </CheatEntry>
             <CheatEntry>
-              <ID>1987710001</ID>
-              <Description>"]SKY LAUNCH"</Description>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-
-local zRecord = getAddressList().getMemoryRecordByID(1337257873)
-local zAddress = zRecord and zRecord.getCurrentAddress()
-
-if zAddress and zAddress ~= 0 then
-    local currentZ = readFloat(zAddress)
-    if currentZ then
-        writeFloat(zAddress, currentZ + 100.0)
-        print("Chaos Mod: player launched into the sky")
-    end
-else
-    print("Chaos Mod: Z coordinate is unavailable")
-end
-
-disableMemrec(memrec)
-{$asm}
-
-[DISABLE]
-</AssemblerScript>
-              <Hotkeys>
-                <Hotkey>
-                  <Action>Toggle Activation</Action>
-                  <Keys>
-                    <Key>135</Key>
-                    <Key>51</Key>
-                  </Keys>
-                  <ID>0</ID>
-                </Hotkey>
-              </Hotkeys>
-            </CheatEntry>
-            <CheatEntry>
               <ID>1987710002</ID>
               <Description>"]HORSE BOMB"</Description>
               <VariableType>Auto Assembler Script</VariableType>
@@ -49500,28 +49463,33 @@ disableMemrec(memrec)
 {$lua}
 if syntaxcheck then return end
 
-local horseRecord = getAddressList().getMemoryRecordByID(1337304903)
 local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
 local horseXRecord = getAddressList().getMemoryRecordByID(1337209831)
+local horseXAddress = horseXRecord and horseXRecord.getCurrentAddress()
+local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+local owner = memrec
 
-if horseRecord and tonumber(horseRecord.Value) == 1 then
-    local horseXAddress = horseXRecord and horseXRecord.getCurrentAddress()
+-- The old mounted-state check was unreliable. Resolve both live addresses and
+-- hold them at zero briefly so the game has time to process both deaths.
+local attempts = 0
+local bombTimer = createTimer(nil)
+bombTimer.Interval = 50
+bombTimer.OnTimer = function(timer)
+    attempts = attempts + 1
     if horseXAddress and horseXAddress ~= 0 then
         -- Horse_X is +0x70 in ChrRideModule; HorseHP is +0x12C.
         writeInteger(horseXAddress + 0xBC, 0)
     end
-
-    local hpAddress = hpRecord and hpRecord.getCurrentAddress()
     if hpAddress and hpAddress ~= 0 then
         writeInteger(hpAddress, 0)
     end
-
-    print("Chaos Mod: horse bomb detonated")
-else
-    print("Chaos Mod: player is not mounted")
+    if attempts &gt;= 20 then
+        timer.destroy()
+        print("Chaos Mod: horse bomb detonated")
+        disableMemrec(owner)
+    end
 end
-
-disableMemrec(memrec)
+bombTimer.Enabled = true
 {$asm}
 
 [DISABLE]
@@ -49539,7 +49507,7 @@ disableMemrec(memrec)
             </CheatEntry>
             <CheatEntry>
               <ID>1987710003</ID>
-              <Description>"]INVERTED CAMERA"</Description>
+              <Description>"]INVERT CAMERA CONTROL"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -49654,83 +49622,6 @@ chaosForbiddenHealLastHp = nil
               </Hotkeys>
             </CheatEntry>
             <CheatEntry>
-              <ID>1987710005</ID>
-              <Description>"]NO FP"</Description>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-
-local fpRecord = getAddressList().getMemoryRecordByID(1337192614)
-local fpAddress = fpRecord and fpRecord.getCurrentAddress()
-
-if fpAddress and fpAddress ~= 0 then
-    writeInteger(fpAddress, 0)
-    print("Chaos Mod: FP drained")
-else
-    print("Chaos Mod: FP is unavailable")
-end
-
-disableMemrec(memrec)
-{$asm}
-
-[DISABLE]
-</AssemblerScript>
-              <Hotkeys>
-                <Hotkey>
-                  <Action>Toggle Activation</Action>
-                  <Keys>
-                    <Key>135</Key>
-                    <Key>55</Key>
-                  </Keys>
-                  <ID>0</ID>
-                </Hotkey>
-              </Hotkeys>
-            </CheatEntry>
-            <CheatEntry>
-              <ID>1987710006</ID>
-              <Description>"]RUSSIAN ROULETTE"</Description>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-
-math.randomseed(os.time() + getTickCount())
-local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
-local fpRecord = getAddressList().getMemoryRecordByID(1337192614)
-local spRecord = getAddressList().getMemoryRecordByID(1337192615)
-
-if math.random(1, 3) == 1 then
-    local hpAddress = hpRecord and hpRecord.getCurrentAddress()
-    if hpAddress and hpAddress ~= 0 then
-        writeInteger(hpAddress, 0)
-        print("Chaos Mod: BANG!")
-    end
-else
-    local fpAddress = fpRecord and fpRecord.getCurrentAddress()
-    local spAddress = spRecord and spRecord.getCurrentAddress()
-    if fpAddress and fpAddress ~= 0 then writeInteger(fpAddress, 0) end
-    if spAddress and spAddress ~= 0 then writeInteger(spAddress, 0) end
-    print("Chaos Mod: click... survived, but lost FP and stamina")
-end
-
-disableMemrec(memrec)
-{$asm}
-
-[DISABLE]
-</AssemblerScript>
-              <Hotkeys>
-                <Hotkey>
-                  <Action>Toggle Activation</Action>
-                  <Keys>
-                    <Key>135</Key>
-                    <Key>56</Key>
-                  </Keys>
-                  <ID>0</ID>
-                </Hotkey>
-              </Hotkeys>
-            </CheatEntry>
-            <CheatEntry>
               <ID>1987710007</ID>
               <Description>"]DEADLY BOUNCE"</Description>
               <VariableType>Auto Assembler Script</VariableType>
@@ -49748,13 +49639,14 @@ local function launchPlayer()
     local zAddress = zRecord and zRecord.getCurrentAddress()
     if zAddress and zAddress ~= 0 then
         local currentZ = readFloat(zAddress)
-        if currentZ then writeFloat(zAddress, currentZ + 35.0) end
+        -- A small hop is disruptive without guaranteeing lethal fall damage.
+        if currentZ then writeFloat(zAddress, currentZ + 2.5) end
     end
 end
 
 launchPlayer()
 chaosBouncyTimer = createTimer(nil)
-chaosBouncyTimer.Interval = 3500
+chaosBouncyTimer.Interval = 2400
 chaosBouncyTimer.OnTimer = function()
     launchPlayer()
 end
@@ -49783,6 +49675,542 @@ print("Chaos Mod: deadly bounce disabled")
                   <ID>0</ID>
                 </Hotkey>
               </Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710097</ID>
+              <Description>"CHAOS SPAWN RUNTIME (KEEP ENABLED)"</Description>
+              <Color>C0C0C0</Color>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+
+local function writeModel(address, model)
+    for i = 0, 23 do writeBytes(address + i, 0) end
+    for i = 1, #model do
+        writeBytes(address + ((i - 1) * 2), string.byte(model, i), 0)
+    end
+end
+
+local function enableSpawnerRecord(description, delay)
+    local record = getAddressList().getMemoryRecordByDescription(description)
+    if not record then
+        print("Chaos Mod: missing spawner record " .. description)
+        return nil
+    end
+    if not record.Active then
+        record.Active = true
+        sleep(delay or 350)
+    end
+    return record
+end
+
+function chaosSpawnGroup(specs)
+    createThread(function()
+        if not enableSpawnerRecord("Character Spawner", 350) then return end
+        if not enableSpawnerRecord("1Character Spawner", 350) then return end
+
+        local spawnRecord = getAddressList().getMemoryRecordByDescription("Spawn Debug Character")
+        local xRecord = getAddressList().getMemoryRecordByID(1337257872)
+        local verticalRecord = getAddressList().getMemoryRecordByID(1337257873)
+        local yRecord = getAddressList().getMemoryRecordByID(1337257874)
+        local cosRecord = getAddressList().getMemoryRecordByID(1337257875)
+        local sinRecord = getAddressList().getMemoryRecordByID(1337257876)
+        local spawnBase = getAddressSafe("[[WorldChrMan]+1E648]")
+
+        if not spawnRecord or not spawnBase or spawnBase == 0 then
+            print("Chaos Mod: character spawner is unavailable")
+            return
+        end
+
+        for _, spec in ipairs(specs) do
+            local xAddress = xRecord and xRecord.getCurrentAddress()
+            local verticalAddress = verticalRecord and verticalRecord.getCurrentAddress()
+            local yAddress = yRecord and yRecord.getCurrentAddress()
+            local playerX = xAddress and readFloat(xAddress)
+            local playerVertical = verticalAddress and readFloat(verticalAddress)
+            local playerY = yAddress and readFloat(yAddress)
+
+            if playerX and playerVertical and playerY then
+                local offsetX = spec.x or 0
+                local offsetY = spec.y or 0
+
+                if spec.behind then
+                    local cosAddress = cosRecord and cosRecord.getCurrentAddress()
+                    local sinAddress = sinRecord and sinRecord.getCurrentAddress()
+                    local halfCos = cosAddress and readFloat(cosAddress)
+                    local halfSin = sinAddress and readFloat(sinAddress)
+                    if halfCos and halfSin then
+                        offsetX = -(2 * halfSin * halfCos) * 3.5
+                        offsetY = -((halfCos * halfCos) - (halfSin * halfSin)) * 3.5
+                    else
+                        offsetY = -3.5
+                    end
+                end
+
+                writeModel(spawnBase + 0x100, spec.model)
+                writeInteger(spawnBase + 0xF0, spec.npc)
+                writeInteger(spawnBase + 0xF4, spec.think)
+                writeInteger(spawnBase + 0xF8, 0)
+                writeInteger(spawnBase + 0xFC, 0)
+                writeInteger(spawnBase + 0x17C, 0)
+                writeBytes(spawnBase + 0x178, spec.enemyType or 0)
+                writeFloat(spawnBase + 0xB0, playerX + offsetX)
+                writeFloat(spawnBase + 0xB4, playerVertical + (spec.up or 0.25))
+                writeFloat(spawnBase + 0xB8, playerY + offsetY)
+
+                spawnRecord.Active = true
+                sleep(250)
+
+                local spawnedCharacter = getAddressSafe("[SpawnedEnemy]")
+                if spawnedCharacter and spawnedCharacter ~= 0 and spec.alliance then
+                    writeBytes(spawnedCharacter + 0x6C, spec.alliance)
+                end
+                sleep(300)
+            end
+        end
+    end)
+end
+{$asm}
+
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+chaosSpawnGroup = nil
+{$asm}
+</AssemblerScript>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710100</ID>
+              <Description>"]SPAWN GODRICK"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({{model="c4750", npc=47500014, think=47500000, x=5, y=2, alliance=7}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>128</Key><Key>54</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710101</ID>
+              <Description>"]SPAWN GODFREY"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({{model="c4720", npc=47200070, think=47200000, x=-5, y=2, alliance=7}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>128</Key><Key>55</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710102</ID>
+              <Description>"]SPAWN MOHG"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({{model="c4800", npc=48000068, think=48000000, x=4, y=-4, alliance=7}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>128</Key><Key>56</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710103</ID>
+              <Description>"]SPAWN PLACIDUSAX"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({{model="c4520", npc=45200072, think=45200000, x=8, y=8, up=1, alliance=7}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>128</Key><Key>57</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710104</ID>
+              <Description>"]MINIMUM BRIGHTNESS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local record = getAddressList().getMemoryRecordByID(1337218106)
+local address = record and record.getCurrentAddress()
+if address and address ~= 0 then
+    chaosBrightnessOriginal = readBytes(address, 1, false)
+    writeBytes(address, 0)
+    print("Chaos Mod: brightness set to minimum")
+end
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+local record = getAddressList().getMemoryRecordByID(1337218106)
+local address = record and record.getCurrentAddress()
+if address and address ~= 0 and chaosBrightnessOriginal ~= nil then
+    writeBytes(address, chaosBrightnessOriginal)
+end
+chaosBrightnessOriginal = nil
+print("Chaos Mod: brightness restored")
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>52</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710105</ID>
+              <Description>"]SCRAMBLED BUTTONS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+chaosButtonRestore = {}
+
+if GetParamTable and LoadParamTable then
+    for _, tableIndex in ipairs({164, 165, 166}) do
+        local tableBase = GetParamTable(tableIndex)
+        local cache = tableBase and LoadParamTable(tableBase)
+        local rows = {}
+
+        if cache then
+            for _, address in pairs(cache) do
+                local padKey = readInteger(address)
+                if padKey and padKey &gt;= 0 and padKey &lt;= 31 then
+                    table.insert(rows, {address=address, value=padKey})
+                    table.insert(chaosButtonRestore, {address=address, value=padKey})
+                end
+            end
+        end
+
+        if #rows &gt; 3 then
+            local shift = math.max(1, math.floor(#rows / 3))
+            for i, row in ipairs(rows) do
+                local source = rows[((i + shift - 1) % #rows) + 1]
+                writeInteger(row.address, source.value)
+            end
+        end
+    end
+    print("Chaos Mod: controller buttons scrambled")
+else
+    print("Chaos Mod: parameter runtime is unavailable")
+end
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosButtonRestore then
+    for _, saved in ipairs(chaosButtonRestore) do
+        writeInteger(saved.address, saved.value)
+    end
+end
+chaosButtonRestore = nil
+print("Chaos Mod: controller buttons restored")
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>53</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710106</ID>
+              <Description>"]SPAWN 2 GOLEMS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({
+        {model="c4660", npc=46600034, think=46600000, x=7, y=3, alliance=6},
+        {model="c4660", npc=46600034, think=46600000, x=-7, y=3, alliance=6}
+    })
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>54</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710107</ID>
+              <Description>"]HOSTILE INVADERS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({
+        {model="c0000", npc=523530032, think=523530000, x=4, y=4, alliance=13},
+        {model="c0000", npc=523040020, think=523040000, x=-4, y=4, alliance=13}
+    })
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>55</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710108</ID>
+              <Description>"]POT ENEMIES"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({
+        {model="c4491", npc=44910020, think=44910000, x=3, y=2, alliance=6},
+        {model="c4491", npc=44910020, think=44910000, x=-3, y=2, alliance=6},
+        {model="c4491", npc=44910020, think=44910000, x=0, y=-3, alliance=6}
+    })
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>56</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710098</ID>
+              <Description>"Chaos Player Roll State"</Description>
+              <Color>C0C0C0</Color>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>WorldChrMan</Address>
+              <Offsets>
+                <Offset>40</Offset><Offset>8</Offset><Offset>190</Offset><Offset>0*10</Offset><Offset>LocalPlayerOffset</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710109</ID>
+              <Description>"]ROLL TAX"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosRollTaxTimer then chaosRollTaxTimer.destroy() end
+local stateRecord = getAddressList().getMemoryRecordByID(1987710098)
+local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
+local maxHpRecord = getAddressList().getMemoryRecordByID(1337193290)
+local wasRolling = false
+
+chaosRollTaxTimer = createTimer(nil)
+chaosRollTaxTimer.Interval = 50
+chaosRollTaxTimer.OnTimer = function()
+    local stateAddress = stateRecord and stateRecord.getCurrentAddress()
+    local state = stateAddress and readBytes(stateAddress, 1, false)
+    local rolling = state and (math.floor(state / 2) % 2 == 1)
+
+    if rolling and not wasRolling then
+        local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+        local maxHpAddress = maxHpRecord and maxHpRecord.getCurrentAddress()
+        local hp = hpAddress and readInteger(hpAddress)
+        local maxHp = maxHpAddress and readInteger(maxHpAddress)
+        if hp and maxHp and hp &gt; 0 then
+            writeInteger(hpAddress, math.max(0, hp - math.max(1, math.floor(maxHp * 0.03))))
+        end
+    end
+    wasRolling = rolling or false
+end
+chaosRollTaxTimer.Enabled = true
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosRollTaxTimer then chaosRollTaxTimer.destroy() end
+chaosRollTaxTimer = nil
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>57</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710099</ID>
+              <Description>"Chaos Player Attack Goal"</Description>
+              <Color>C0C0C0</Color>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>4 Bytes</VariableType>
+              <Address>WorldChrMan</Address>
+              <Offsets>
+                <Offset>14</Offset><Offset>8</Offset><Offset>190</Offset><Offset>0*10</Offset><Offset>LocalPlayerOffset</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710110</ID>
+              <Description>"]PACIFIST PLAYER"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosPacifistTimer then chaosPacifistTimer.destroy() end
+local attackRecord = getAddressList().getMemoryRecordByID(1987710099)
+local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
+local maxHpRecord = getAddressList().getMemoryRecordByID(1337193290)
+local lastAttack = 0
+local lastPenaltyAt = 0
+
+chaosPacifistTimer = createTimer(nil)
+chaosPacifistTimer.Interval = 50
+chaosPacifistTimer.OnTimer = function()
+    local attackAddress = attackRecord and attackRecord.getCurrentAddress()
+    local attack = attackAddress and readInteger(attackAddress) or 0
+    local now = getTickCount()
+
+    if attack ~= 0 and attack ~= lastAttack and now - lastPenaltyAt &gt; 250 then
+        local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+        local maxHpAddress = maxHpRecord and maxHpRecord.getCurrentAddress()
+        local hp = hpAddress and readInteger(hpAddress)
+        local maxHp = maxHpAddress and readInteger(maxHpAddress)
+        if hp and maxHp and hp &gt; 0 then
+            writeInteger(hpAddress, math.max(0, hp - math.max(1, math.floor(maxHp * 0.03))))
+            lastPenaltyAt = now
+        end
+    end
+    lastAttack = attack
+end
+chaosPacifistTimer.Enabled = true
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosPacifistTimer then chaosPacifistTimer.destroy() end
+chaosPacifistTimer = nil
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>49</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710111</ID>
+              <Description>"]SPAWN 3 ALBINAURICS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({
+        {model="c3470", npc=34700020, think=34700000, x=4, y=2, alliance=6},
+        {model="c3470", npc=34700020, think=34700000, x=-4, y=2, alliance=6},
+        {model="c3470", npc=34700020, think=34700000, x=0, y=-4, alliance=6}
+    })
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>50</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710112</ID>
+              <Description>"]SURPRISE PATCHES"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnGroup then
+    chaosSpawnGroup({{model="c0000", npc=533090040, think=533090000, behind=true, alliance=27}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>51</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710113</ID>
+              <Description>"]DAMAGE TELEPORT"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosDamageTeleportTimer then chaosDamageTeleportTimer.destroy() end
+
+local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
+local xRecord = getAddressList().getMemoryRecordByID(1337257872)
+local verticalRecord = getAddressList().getMemoryRecordByID(1337257873)
+local yRecord = getAddressList().getMemoryRecordByID(1337257874)
+local history = {}
+local lastSampleAt = 0
+local lastTeleportAt = 0
+local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+local lastHp = hpAddress and readInteger(hpAddress)
+
+math.randomseed(os.time() + getTickCount())
+chaosDamageTeleportTimer = createTimer(nil)
+chaosDamageTeleportTimer.Interval = 100
+chaosDamageTeleportTimer.OnTimer = function()
+    local now = getTickCount()
+    local currentHpAddress = hpRecord and hpRecord.getCurrentAddress()
+    local currentHp = currentHpAddress and readInteger(currentHpAddress)
+    local xAddress = xRecord and xRecord.getCurrentAddress()
+    local verticalAddress = verticalRecord and verticalRecord.getCurrentAddress()
+    local yAddress = yRecord and yRecord.getCurrentAddress()
+
+    if now - lastSampleAt &gt;= 500 and currentHp and currentHp &gt; 0 then
+        local x = xAddress and readFloat(xAddress)
+        local vertical = verticalAddress and readFloat(verticalAddress)
+        local y = yAddress and readFloat(yAddress)
+        if x and vertical and y then
+            table.insert(history, 1, {x=x, vertical=vertical, y=y})
+            if #history &gt; 24 then table.remove(history) end
+        end
+        lastSampleAt = now
+    end
+
+    if currentHp and lastHp and currentHp &gt; 0 and currentHp &lt; lastHp and now - lastTeleportAt &gt; 1500 and #history &gt;= 4 then
+        -- A recently occupied position is much safer than a blind world-space offset.
+        local oldestAllowed = math.min(#history, 20)
+        local destination = history[math.random(4, oldestAllowed)]
+        if xAddress and verticalAddress and yAddress and destination then
+            local angle = math.random() * math.pi * 2
+            local radius = 0.75 + (math.random() * 1.25)
+            writeFloat(xAddress, destination.x + math.cos(angle) * radius)
+            writeFloat(verticalAddress, destination.vertical + 0.5)
+            writeFloat(yAddress, destination.y + math.sin(angle) * radius)
+            lastTeleportAt = now
+        end
+    end
+    lastHp = currentHp
+end
+chaosDamageTeleportTimer.Enabled = true
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosDamageTeleportTimer then chaosDamageTeleportTimer.destroy() end
+chaosDamageTeleportTimer = nil
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>52</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>

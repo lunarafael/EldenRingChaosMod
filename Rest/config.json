@@ -281,17 +281,12 @@
             "basechance": 10,
             "enabled": true
         },
-        "Sky Launch": {
-            "chance": 50,
-            "basechance": 50,
-            "enabled": true
-        },
         "Horse Bomb": {
             "chance": 45,
             "basechance": 45,
             "enabled": true
         },
-        "Inverted Camera": {
+        "Invert Camera Control": {
             "chance": 80,
             "basechance": 80,
             "enabled": true
@@ -301,19 +296,79 @@
             "basechance": 35,
             "enabled": true
         },
-        "No FP": {
-            "chance": 80,
-            "basechance": 80,
+        "Deadly Bounce": {
+            "chance": 45,
+            "basechance": 45,
             "enabled": true
         },
-        "Russian Roulette": {
+        "Spawn Godrick": {
+            "chance": 20,
+            "basechance": 20,
+            "enabled": true
+        },
+        "Spawn Godfrey": {
+            "chance": 15,
+            "basechance": 15,
+            "enabled": true
+        },
+        "Spawn Mohg": {
+            "chance": 15,
+            "basechance": 15,
+            "enabled": true
+        },
+        "Spawn Placidusax": {
+            "chance": 10,
+            "basechance": 10,
+            "enabled": true
+        },
+        "Minimum Brightness": {
+            "chance": 55,
+            "basechance": 55,
+            "enabled": true
+        },
+        "Scrambled Buttons": {
+            "chance": 35,
+            "basechance": 35,
+            "enabled": true
+        },
+        "Spawn 2 Golems": {
             "chance": 25,
             "basechance": 25,
             "enabled": true
         },
-        "Deadly Bounce": {
+        "Hostile Invaders": {
+            "chance": 30,
+            "basechance": 30,
+            "enabled": true
+        },
+        "Pot Enemies": {
             "chance": 45,
             "basechance": 45,
+            "enabled": true
+        },
+        "Roll Tax": {
+            "chance": 55,
+            "basechance": 55,
+            "enabled": true
+        },
+        "Pacifist Player": {
+            "chance": 45,
+            "basechance": 45,
+            "enabled": true
+        },
+        "Spawn 3 Albinaurics": {
+            "chance": 45,
+            "basechance": 45,
+            "enabled": true
+        },
+        "Surprise Patches": {
+            "chance": 40,
+            "basechance": 40,
+            "enabled": true
+        },
+        "Damage Teleport": {
+            "chance": 35,
+            "basechance": 35,
             "enabled": true
         }
     }
