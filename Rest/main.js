@@ -632,9 +632,6 @@ function processKeypresses(actionname) {
     }else if(actionname === "Drunk Camera"){
         toggleKeyForRound(['F19', '3']);
 
-    }else if(actionname === "Tunnel Vision"){
-        toggleKeyForRound(['F19', '5']);
-
     }else if(actionname === "Delayed Controls"){
         toggleKeyForRound(['F19', '6']);
 

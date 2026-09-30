@@ -401,11 +401,6 @@
             "basechance": 45,
             "enabled": true
         },
-        "Tunnel Vision": {
-            "chance": 40,
-            "basechance": 40,
-            "enabled": true
-        },
         "Delayed Controls": {
             "chance": 45,
             "basechance": 45,

@@ -49911,17 +49911,23 @@ if chaosMadnessTimer then chaosMadnessTimer.destroy() end
 
 local buildupRecord = getAddressList().getMemoryRecordByID(1337196754)
 local maxRecord = getAddressList().getMemoryRecordByID(1337196755)
+local savedBuildupRecord = getAddressList().getMemoryRecordByID(1337209391)
 
 chaosMadnessTimer = createTimer(nil)
 chaosMadnessTimer.Interval = 750
 chaosMadnessTimer.OnTimer = function()
     local buildupAddress = buildupRecord and buildupRecord.getCurrentAddress()
     local maxAddress = maxRecord and maxRecord.getCurrentAddress()
-    local buildup = buildupAddress and buildupAddress ~= 0 and readInteger(buildupAddress)
+    local savedAddress = savedBuildupRecord and savedBuildupRecord.getCurrentAddress()
+    local buildup = savedAddress and savedAddress ~= 0 and readInteger(savedAddress)
     local maximum = maxAddress and maxAddress ~= 0 and readInteger(maxAddress)
-    if buildup and maximum and buildup &gt;= 0 and maximum &gt; 0 then
-        local increase = math.max(1, math.floor(maximum * 0.04))
-        writeInteger(buildupAddress, math.min(maximum + 1, buildup + increase))
+    if buildup and maximum and buildup &gt;= 0 and maximum &gt; 0 and maximum &lt; 100000 then
+        local increase = math.max(1, math.floor(maximum * 0.12))
+        local nextBuildup = math.min(maximum + 1, buildup + increase)
+        writeInteger(savedAddress, nextBuildup)
+        if buildupAddress and buildupAddress ~= 0 then
+            writeInteger(buildupAddress, nextBuildup)
+        end
     end
 end
 chaosMadnessTimer.Enabled = true
@@ -49946,17 +49952,23 @@ if chaosScarletRotTimer then chaosScarletRotTimer.destroy() end
 
 local buildupRecord = getAddressList().getMemoryRecordByID(1337196744)
 local maxRecord = getAddressList().getMemoryRecordByID(1337196745)
+local savedBuildupRecord = getAddressList().getMemoryRecordByID(1337192030)
 
 chaosScarletRotTimer = createTimer(nil)
 chaosScarletRotTimer.Interval = 750
 chaosScarletRotTimer.OnTimer = function()
     local buildupAddress = buildupRecord and buildupRecord.getCurrentAddress()
     local maxAddress = maxRecord and maxRecord.getCurrentAddress()
-    local buildup = buildupAddress and buildupAddress ~= 0 and readInteger(buildupAddress)
+    local savedAddress = savedBuildupRecord and savedBuildupRecord.getCurrentAddress()
+    local buildup = savedAddress and savedAddress ~= 0 and readInteger(savedAddress)
     local maximum = maxAddress and maxAddress ~= 0 and readInteger(maxAddress)
-    if buildup and maximum and buildup &gt;= 0 and maximum &gt; 0 then
-        local increase = math.max(1, math.floor(maximum * 0.04))
-        writeInteger(buildupAddress, math.min(maximum + 1, buildup + increase))
+    if buildup and maximum and buildup &gt;= 0 and maximum &gt; 0 and maximum &lt; 100000 then
+        local increase = math.max(1, math.floor(maximum * 0.12))
+        local nextBuildup = math.min(maximum + 1, buildup + increase)
+        writeInteger(savedAddress, nextBuildup)
+        if buildupAddress and buildupAddress ~= 0 then
+            writeInteger(buildupAddress, nextBuildup)
+        end
     end
 end
 chaosScarletRotTimer.Enabled = true
@@ -49992,6 +50004,17 @@ disableMemrec(memrec)
               <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>129</Key><Key>54</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
             </CheatEntry>
             <CheatEntry>
+              <ID>1987710124</ID>
+              <Description>"Chaos Player Equip Load Type"</Description>
+              <Color>C0C0C0</Color>
+              <ShowAsSigned>0</ShowAsSigned>
+              <VariableType>Byte</VariableType>
+              <Address>WorldChrMan</Address>
+              <Offsets>
+                <Offset>184</Offset><Offset>58</Offset><Offset>0*10</Offset><Offset>LocalPlayerOffset</Offset>
+              </Offsets>
+            </CheatEntry>
+            <CheatEntry>
               <ID>1987710107</ID>
               <Description>"]MEGA FAT PLAYER"</Description>
               <VariableType>Auto Assembler Script</VariableType>
@@ -50002,28 +50025,50 @@ if chaosMegaFatTimer then chaosMegaFatTimer.destroy() end
 
 local widthRecord = getAddressList().getMemoryRecordByID(1337212442)
 local depthRecord = getAddressList().getMemoryRecordByID(1337199685)
+local speedRecord = getAddressList().getMemoryRecordByID(1337103861)
+local rollStateRecord = getAddressList().getMemoryRecordByID(1987710098)
+local loadTypeRecord = getAddressList().getMemoryRecordByID(1987710124)
 local widthAddress = widthRecord and widthRecord.getCurrentAddress()
 local depthAddress = depthRecord and depthRecord.getCurrentAddress()
+local speedAddress = speedRecord and speedRecord.getCurrentAddress()
+local loadTypeAddress = loadTypeRecord and loadTypeRecord.getCurrentAddress()
 
 chaosMegaFatOriginal = {
     width = widthAddress and widthAddress ~= 0 and readFloat(widthAddress),
-    depth = depthAddress and depthAddress ~= 0 and readFloat(depthAddress)
+    depth = depthAddress and depthAddress ~= 0 and readFloat(depthAddress),
+    speed = speedAddress and speedAddress ~= 0 and readFloat(speedAddress),
+    loadType = loadTypeAddress and loadTypeAddress ~= 0 and readBytes(loadTypeAddress, 1, false)
 }
 
 local function applyMegaFat()
     local currentWidthAddress = widthRecord and widthRecord.getCurrentAddress()
     local currentDepthAddress = depthRecord and depthRecord.getCurrentAddress()
     if currentWidthAddress and currentWidthAddress ~= 0 then
-        writeFloat(currentWidthAddress, 12.0)
+        writeFloat(currentWidthAddress, 4.0)
     end
     if currentDepthAddress and currentDepthAddress ~= 0 then
-        writeFloat(currentDepthAddress, 12.0)
+        writeFloat(currentDepthAddress, 3.2)
+    end
+
+    -- 0=light, 1=medium, 2=heavy, 3=overloaded in the character runtime.
+    local currentLoadTypeAddress = loadTypeRecord and loadTypeRecord.getCurrentAddress()
+    if currentLoadTypeAddress and currentLoadTypeAddress ~= 0
+        and chaosMegaFatOriginal.loadType and chaosMegaFatOriginal.loadType &lt;= 3 then
+        writeBytes(currentLoadTypeAddress, 2)
+    end
+
+    local rollStateAddress = rollStateRecord and rollStateRecord.getCurrentAddress()
+    local state = rollStateAddress and rollStateAddress ~= 0 and readBytes(rollStateAddress, 1, false)
+    local speedAddress = speedRecord and speedRecord.getCurrentAddress()
+    if speedAddress and speedAddress ~= 0 and chaosMegaFatOriginal.speed then
+        local rolling = state and math.floor(state / 2) % 2 == 1
+        writeFloat(speedAddress, rolling and chaosMegaFatOriginal.speed * 0.55 or chaosMegaFatOriginal.speed)
     end
 end
 
 applyMegaFat()
 chaosMegaFatTimer = createTimer(nil)
-chaosMegaFatTimer.Interval = 100
+chaosMegaFatTimer.Interval = 50
 chaosMegaFatTimer.OnTimer = applyMegaFat
 chaosMegaFatTimer.Enabled = true
 {$asm}
@@ -50035,14 +50080,24 @@ chaosMegaFatTimer = nil
 
 local widthRecord = getAddressList().getMemoryRecordByID(1337212442)
 local depthRecord = getAddressList().getMemoryRecordByID(1337199685)
+local speedRecord = getAddressList().getMemoryRecordByID(1337103861)
+local loadTypeRecord = getAddressList().getMemoryRecordByID(1987710124)
 local widthAddress = widthRecord and widthRecord.getCurrentAddress()
 local depthAddress = depthRecord and depthRecord.getCurrentAddress()
+local speedAddress = speedRecord and speedRecord.getCurrentAddress()
+local loadTypeAddress = loadTypeRecord and loadTypeRecord.getCurrentAddress()
 if chaosMegaFatOriginal then
     if widthAddress and widthAddress ~= 0 and chaosMegaFatOriginal.width ~= nil then
         writeFloat(widthAddress, chaosMegaFatOriginal.width)
     end
     if depthAddress and depthAddress ~= 0 and chaosMegaFatOriginal.depth ~= nil then
         writeFloat(depthAddress, chaosMegaFatOriginal.depth)
+    end
+    if speedAddress and speedAddress ~= 0 and chaosMegaFatOriginal.speed ~= nil then
+        writeFloat(speedAddress, chaosMegaFatOriginal.speed)
+    end
+    if loadTypeAddress and loadTypeAddress ~= 0 and chaosMegaFatOriginal.loadType ~= nil then
+        writeBytes(loadTypeAddress, chaosMegaFatOriginal.loadType)
     end
 end
 chaosMegaFatOriginal = nil
@@ -50311,6 +50366,7 @@ if syntaxcheck then return end
 if chaosEmoteTimer then chaosEmoteTimer.destroy() end
 
 local animationRecord = getAddressList().getMemoryRecordByID(1337279546)
+local animationAddress = animationRecord and animationRecord.getCurrentAddress()
 local emotes = {
     80000, 80010, 80020, 80030, 80040, 80060, 80070, 80080,
     80090, 80100, 80200, 80210, 80220, 80230, 80240, 80250,
@@ -50318,17 +50374,20 @@ local emotes = {
     80700, 80710, 80720, 80730
 }
 
-math.randomseed(os.time() + getTickCount())
-chaosEmoteTimer = createTimer(nil)
-chaosEmoteTimer.Interval = math.random(1500, 3500)
-chaosEmoteTimer.OnTimer = function(timer)
-    local animationAddress = animationRecord and animationRecord.getCurrentAddress()
-    if animationAddress and animationAddress ~= 0 then
-        writeInteger(animationAddress, emotes[math.random(#emotes)])
+if animationAddress and animationAddress ~= 0 then
+    math.randomseed(os.time() + getTickCount())
+    local function playRandomEmote()
+        local currentAddress = animationRecord and animationRecord.getCurrentAddress()
+        if currentAddress and currentAddress ~= 0 then
+            writeInteger(currentAddress, emotes[math.random(#emotes)])
+        end
     end
-    timer.Interval = math.random(3500, 8000)
+    playRandomEmote()
+    chaosEmoteTimer = createTimer(nil)
+    chaosEmoteTimer.Interval = 2200
+    chaosEmoteTimer.OnTimer = playRandomEmote
+    chaosEmoteTimer.Enabled = true
 end
-chaosEmoteTimer.Enabled = true
 {$asm}
 [DISABLE]
 {$lua}
@@ -50353,8 +50412,7 @@ end
 if syntaxcheck then return end
 if chaosNakedTimer then chaosNakedTimer.destroy() end
 
--- Every weapon, ammunition and armor slot. Hair is kept separate so changing it
--- can force ChrAsm to rebuild the face materials after each color update.
+-- Every weapon, ammunition and armor slot.
 local equipmentIds = {
     1337193096, 1337193097, 1337193098, 1337193099,
     1337193100, 1337193101, 1337193102, 1337193103,
@@ -50365,12 +50423,13 @@ local skinIds = {1337213103, 1337213104, 1337213105}
 local bodyHairIds = {1337213143, 1337213144, 1337213145}
 local hairColorIds = {1337213170, 1337213171, 1337213172}
 local colorIds = {
-    1337213103, 1337213104, 1337213105,
+    1337213103, 1337213104, 1337213105, 1337213106,
     1337213143, 1337213144, 1337213145,
-    1337213170, 1337213171, 1337213172
+    1337213170, 1337213171, 1337213172, 1337213173,
+    1337213174, 1337213175
 }
-local hairRecord = getAddressList().getMemoryRecordByID(1337193112)
-local hairAddress = hairRecord and hairRecord.getCurrentAddress()
+local hairModelRecord = getAddressList().getMemoryRecordByID(1337193264)
+local hairModelAddress = hairModelRecord and hairModelRecord.getCurrentAddress()
 local palettes = {
     {255, 0, 0}, {255, 128, 0}, {255, 255, 0},
     {0, 255, 0}, {0, 255, 255}, {0, 64, 255},
@@ -50378,7 +50437,7 @@ local palettes = {
 }
 
 chaosNakedOriginal = {equipment={}, colors={}}
-chaosNakedOriginal.hair = hairAddress and hairAddress ~= 0 and readInteger(hairAddress)
+chaosNakedOriginal.hairModel = hairModelAddress and hairModelAddress ~= 0 and readInteger(hairModelAddress)
 
 for _, id in ipairs(equipmentIds) do
     local record = getAddressList().getMemoryRecordByID(id)
@@ -50398,7 +50457,7 @@ end
 
 math.randomseed(os.time() + getTickCount())
 local lastColorAt = 0
-local hairRefreshFlip = false
+local hairRefreshUntil = 0
 chaosNakedTimer = createTimer(nil)
 chaosNakedTimer.Interval = 100
 chaosNakedTimer.OnTimer = function()
@@ -50422,19 +50481,35 @@ chaosNakedTimer.OnTimer = function()
             end
         end
 
-        -- A different hair part makes the game rebuild the appearance and read
-        -- the updated skin/hair colors instead of leaving the cached material.
-        local currentHairAddress = hairRecord and hairRecord.getCurrentAddress()
-        if currentHairAddress and currentHairAddress ~= 0 and chaosNakedOriginal.hair ~= nil then
-            if hairRefreshFlip then
-                writeInteger(currentHairAddress, chaosNakedOriginal.hair)
-            else
-                local alternate = chaosNakedOriginal.hair == 0 and 1 or 0
-                writeInteger(currentHairAddress, alternate)
-            end
-            hairRefreshFlip = not hairRefreshFlip
+        -- Keep both channels opaque and remove hair tint that can hide RGB.
+        for _, id in ipairs({1337213106, 1337213173}) do
+            local record = getAddressList().getMemoryRecordByID(id)
+            local address = record and record.getCurrentAddress()
+            if address and address ~= 0 then writeBytes(address, 255) end
+        end
+        for _, id in ipairs({1337213174, 1337213175}) do
+            local record = getAddressList().getMemoryRecordByID(id)
+            local address = record and record.getCurrentAddress()
+            if address and address ~= 0 then writeBytes(address, 0) end
+        end
+
+        -- This is the FaceData hair model, rather than the ChrAsm hair slot.
+        -- Changing it briefly asks the character model to reload the face.
+        local currentHairAddress = hairModelRecord and hairModelRecord.getCurrentAddress()
+        if currentHairAddress and currentHairAddress ~= 0
+            and chaosNakedOriginal.hairModel and chaosNakedOriginal.hairModel &lt;= 255 then
+            local original = chaosNakedOriginal.hairModel
+            writeInteger(currentHairAddress, original &gt; 1 and original - 1 or original + 1)
+            hairRefreshUntil = now + 100
         end
         lastColorAt = now
+    elseif hairRefreshUntil ~= 0 and now &gt;= hairRefreshUntil then
+        local currentHairAddress = hairModelRecord and hairModelRecord.getCurrentAddress()
+        if currentHairAddress and currentHairAddress ~= 0
+            and chaosNakedOriginal.hairModel and chaosNakedOriginal.hairModel &lt;= 255 then
+            writeInteger(currentHairAddress, chaosNakedOriginal.hairModel)
+        end
+        hairRefreshUntil = 0
     end
 end
 chaosNakedTimer.Enabled = true
@@ -50456,10 +50531,10 @@ if chaosNakedOriginal then
         local address = record and record.getCurrentAddress()
         if address and address ~= 0 then writeBytes(address, value) end
     end
-    local hairRecord = getAddressList().getMemoryRecordByID(1337193112)
-    local hairAddress = hairRecord and hairRecord.getCurrentAddress()
-    if hairAddress and hairAddress ~= 0 and chaosNakedOriginal.hair ~= nil then
-        writeInteger(hairAddress, chaosNakedOriginal.hair)
+    local hairModelRecord = getAddressList().getMemoryRecordByID(1337193264)
+    local hairModelAddress = hairModelRecord and hairModelRecord.getCurrentAddress()
+    if hairModelAddress and hairModelAddress ~= 0 and chaosNakedOriginal.hairModel ~= nil then
+        writeInteger(hairModelAddress, chaosNakedOriginal.hairModel)
     end
 end
 chaosNakedOriginal = nil
@@ -50586,51 +50661,6 @@ chaosDrunkCameraStartedAt = nil
 {$asm}
 </AssemblerScript>
               <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>51</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
-            </CheatEntry>
-            <CheatEntry>
-              <ID>1987710122</ID>
-              <Description>"]TUNNEL VISION"</Description>
-              <VariableType>Auto Assembler Script</VariableType>
-              <AssemblerScript>[ENABLE]
-{$lua}
-if syntaxcheck then return end
-if chaosTunnelVisionTimer then chaosTunnelVisionTimer.destroy() end
-
-local fovRecord = getAddressList().getMemoryRecordByID(1337247705)
-local fovAddress = fovRecord and fovRecord.getCurrentAddress()
-chaosTunnelVisionOriginal = fovAddress and fovAddress ~= 0 and readFloat(fovAddress)
-chaosTunnelVisionStartedAt = getTickCount()
-
-local function applyTunnelVision()
-    local address = fovRecord and fovRecord.getCurrentAddress()
-    if address and address ~= 0 then
-        local elapsed = (getTickCount() - chaosTunnelVisionStartedAt) / 1000
-        writeFloat(address, 16 + math.sin(elapsed * 1.4) * 2)
-    end
-end
-
-applyTunnelVision()
-chaosTunnelVisionTimer = createTimer(nil)
-chaosTunnelVisionTimer.Interval = 50
-chaosTunnelVisionTimer.OnTimer = applyTunnelVision
-chaosTunnelVisionTimer.Enabled = true
-{$asm}
-[DISABLE]
-{$lua}
-if syntaxcheck then return end
-if chaosTunnelVisionTimer then chaosTunnelVisionTimer.destroy() end
-chaosTunnelVisionTimer = nil
-
-local fovRecord = getAddressList().getMemoryRecordByID(1337247705)
-local fovAddress = fovRecord and fovRecord.getCurrentAddress()
-if fovAddress and fovAddress ~= 0 and chaosTunnelVisionOriginal ~= nil then
-    writeFloat(fovAddress, chaosTunnelVisionOriginal)
-end
-chaosTunnelVisionOriginal = nil
-chaosTunnelVisionStartedAt = nil
-{$asm}
-</AssemblerScript>
-              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>53</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
             </CheatEntry>
             <CheatEntry>
               <ID>1987710123</ID>

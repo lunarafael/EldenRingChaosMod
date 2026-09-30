@@ -95,6 +95,5 @@ Random Emotes
 Naked Rainbow
 Barely Moving
 Drunk Camera
-Tunnel Vision
 Delayed Controls
 ```
