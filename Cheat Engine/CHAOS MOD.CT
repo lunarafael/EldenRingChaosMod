@@ -49477,49 +49477,47 @@ if syntaxcheck then return end
 local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
 local mountedRecord = getAddressList().getMemoryRecordByID(1337304903)
 local horseStateRecord = getAddressList().getMemoryRecordByID(1987710096)
-local horseXRecord = getAddressList().getMemoryRecordByID(1337209831)
-local owner = memrec
 
--- The Horse record is a single bit inside the player structure. Reading the
--- backing byte avoids relying on CE's formatted Binary record value.
-local mountedAddress = mountedRecord and mountedRecord.getCurrentAddress()
-local mountedByte = mountedAddress and mountedAddress ~= 0 and readBytes(mountedAddress, 1, false)
-local horseStateAddress = horseStateRecord and horseStateRecord.getCurrentAddress()
-local horseState = horseStateAddress and horseStateAddress ~= 0 and readInteger(horseStateAddress)
-local mounted = (mountedByte and (math.floor(mountedByte / 32) % 2 == 1))
-    or (horseState and horseState ~= 0)
+if chaosHorseBombTimer then chaosHorseBombTimer.destroy() end
 
-if not mounted then
-    print("Chaos Mod: horse bomb ignored because the player is not mounted")
-    disableMemrec(owner)
-    return
+-- Torrent's derived HP pointer proved unsafe across game versions. Poll the
+-- two player-owned mounted indicators once per second instead; killing the
+-- mounted rider makes the game dismiss Torrent through its normal path.
+local function playerIsMounted()
+    local mountedAddress = mountedRecord and mountedRecord.getCurrentAddress()
+    local mountedByte = mountedAddress and mountedAddress ~= 0
+        and readBytes(mountedAddress, 1, false)
+    local horseStateAddress = horseStateRecord and horseStateRecord.getCurrentAddress()
+    local horseState = horseStateAddress and horseStateAddress ~= 0
+        and readInteger(horseStateAddress)
+
+    return (mountedByte and (math.floor(mountedByte / 32) % 2 == 1))
+        or (horseState and horseState ~= 0)
 end
 
--- Resolve the horse and player addresses only after confirming the mounted bit.
-local horseXAddress = horseXRecord and horseXRecord.getCurrentAddress()
-local hpAddress = hpRecord and hpRecord.getCurrentAddress()
-local attempts = 0
-local bombTimer = createTimer(nil)
-bombTimer.Interval = 50
-bombTimer.OnTimer = function(timer)
-    attempts = attempts + 1
-    if horseXAddress and horseXAddress ~= 0 then
-        -- Horse_X is +0x70 in ChrRideModule; HorseHP is +0x12C.
-        writeInteger(horseXAddress + 0xBC, 0)
-    end
-    if hpAddress and hpAddress ~= 0 then
+chaosHorseBombTimer = createTimer(nil)
+chaosHorseBombTimer.Interval = 1000
+chaosHorseBombTimer.OnTimer = function(timer)
+    if not playerIsMounted() then return end
+
+    local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+    local hp = hpAddress and hpAddress ~= 0 and readInteger(hpAddress)
+    if hp and hp &gt; 0 then
         writeInteger(hpAddress, 0)
-    end
-    if attempts &gt;= 20 then
-        timer.destroy()
         print("Chaos Mod: horse bomb detonated")
-        disableMemrec(owner)
     end
+    timer.destroy()
+    chaosHorseBombTimer = nil
 end
-bombTimer.Enabled = true
+chaosHorseBombTimer.Enabled = true
 {$asm}
 
 [DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosHorseBombTimer then chaosHorseBombTimer.destroy() end
+chaosHorseBombTimer = nil
+{$asm}
 </AssemblerScript>
               <Hotkeys>
                 <Hotkey>
@@ -49773,6 +49771,30 @@ local function applySpawnOffset(spec)
     if z then writeFloat(zAddress, z + offsetZ) end
 end
 
+local function forceSpawnedAlliance(previousEntity, spec)
+    if spec.alliance == nil and spec.phantom == nil then return end
+
+    local symbolAddress = getAddressSafe("SpawnedEnemy")
+    if not symbolAddress or symbolAddress == 0 then return end
+
+    -- 1Character Spawner refreshes SpawnedEnemy asynchronously. Wait for its
+    -- pointer to change so the team is written to this spawn, not the last one.
+    local entity = nil
+    for _ = 1, 20 do
+        entity = readQword(symbolAddress)
+        if entity and entity ~= 0 and entity ~= previousEntity then break end
+        sleep(50)
+    end
+
+    if not entity or entity == 0 then
+        print("Chaos Mod: spawned character pointer was not resolved")
+        return
+    end
+
+    if spec.phantom ~= nil then writeInteger(entity + 0x68, spec.phantom) end
+    if spec.alliance ~= nil then writeBytes(entity + 0x6C, spec.alliance) end
+end
+
 -- This deliberately follows the same proven chain used by SPAWN MALENIA:
 -- preset -> current player position -> Spawn Debug Character.
 function chaosSpawnPresets(specs)
@@ -49781,6 +49803,9 @@ function chaosSpawnPresets(specs)
         if not enableSpawnerRecord("1Character Spawner") then return end
 
         for _, spec in ipairs(specs) do
+            local spawnedEnemySymbol = getAddressSafe("SpawnedEnemy")
+            local previousEntity = spawnedEnemySymbol and spawnedEnemySymbol ~= 0
+                and readQword(spawnedEnemySymbol) or 0
             if not toggleSpawnerRecord(spec.preset, 100) then return end
             sleep(400)
             if not toggleSpawnerRecord("Print Current PosX/Y/Z", 100) then return end
@@ -49788,7 +49813,9 @@ function chaosSpawnPresets(specs)
             applySpawnOffset(spec)
             sleep(100)
             if not toggleSpawnerRecord("Spawn Debug Character", 50) then return end
-            sleep(500)
+            sleep(250)
+            forceSpawnedAlliance(previousEntity, spec)
+            sleep(250)
         end
     end)
 end
@@ -49904,11 +49931,12 @@ local function applyMinimumBrightness()
         writeBytes(currentBrightnessAddress, 0)
     end
     if mapLightAddress and mapLightAddress ~= 0 then
-        -- MapLight is the four-float vector copied into the map lighting pass.
+        -- The fourth float enables the override. The old implementation wrote
+        -- zero there, which disabled its own black-light RGB values.
         writeFloat(mapLightAddress, 0.0)
         writeFloat(mapLightAddress + 4, 0.0)
         writeFloat(mapLightAddress + 8, 0.0)
-        writeFloat(mapLightAddress + 12, 0.0)
+        writeFloat(mapLightAddress + 12, 1.0)
     end
 end
 
@@ -49917,7 +49945,7 @@ chaosBrightnessTimer = createTimer(nil)
 chaosBrightnessTimer.Interval = 100
 chaosBrightnessTimer.OnTimer = applyMinimumBrightness
 chaosBrightnessTimer.Enabled = true
-print("Chaos Mod: brightness and map lighting set to minimum")
+print("Chaos Mod: minimum brightness override enabled")
 {$asm}
 [DISABLE]
 {$lua}
@@ -49954,21 +49982,32 @@ print("Chaos Mod: brightness restored")
 {$lua}
 if syntaxcheck then return end
 
-local function findXInputGetState()
+local function findXInputGetStateCandidates()
     local names = {
         "xinput1_4.XInputGetState",
         "XINPUT1_4.dll.XInputGetState",
+        "xinput1_4.100",
+        "XINPUT1_4.dll.100",
+        "xinput1_4.#100",
+        "XINPUT1_4.dll.#100",
         "xinput1_3.XInputGetState",
         "XINPUT1_3.dll.XInputGetState",
+        "xinput1_3.100",
+        "XINPUT1_3.dll.100",
         "xinput9_1_0.XInputGetState",
         "XINPUT9_1_0.dll.XInputGetState",
         "XInputGetState"
     }
+    local candidates = {}
+    local seen = {}
     for _, name in ipairs(names) do
         local address = getAddressSafe(name)
-        if address and address ~= 0 then return address end
+        if address and address ~= 0 and not seen[address] then
+            table.insert(candidates, address)
+            seen[address] = true
+        end
     end
-    return nil
+    return candidates
 end
 
 local function qwordPattern(address)
@@ -49981,9 +50020,9 @@ local function qwordPattern(address)
     return table.concat(bytes, " ")
 end
 
-local target = findXInputGetState()
-if not target then
-    print("Chaos Mod: XInputGetState was not found")
+local candidates = findXInputGetStateCandidates()
+if #candidates == 0 then
+    print("Chaos Mod: no XInput state function was found")
     return
 end
 
@@ -50085,34 +50124,60 @@ end
 
 local hookAddress = getAddressSafe("chaosXInputHook")
 local originalSlot = getAddressSafe("chaosXInputOriginal")
-writeQword(originalSlot, target)
-
 local moduleBase = getAddress("eldenring.exe")
 local moduleSize = getModuleSize("eldenring.exe")
-local scan = createMemScan()
-scan.firstScan(soExactValue, vtByteArray, nil, qwordPattern(target), nil,
-    moduleBase, moduleBase + moduleSize - 8, "*X*C*W", fsmAligned, "8",
-    true, false, false, false)
-scan.waitTillDone()
-local found = createFoundList(scan)
-found.initialize()
-
 chaosButtonSlots = {}
-for i = 0, found.Count - 1 do
-    local slot = getAddress(found.Address[i])
-    if readQword(slot) == target then
-        table.insert(chaosButtonSlots, slot)
-        writeQword(slot, hookAddress)
+chaosButtonTarget = nil
+
+-- Steam Input may make Elden Ring import ordinal 100 (GetStateEx) instead of
+-- the named export. Test every loaded XInput variant and keep the first one
+-- that is actually referenced by the executable.
+for _, candidate in ipairs(candidates) do
+    local scan = createMemScan()
+    scan.firstScan(soExactValue, vtByteArray, nil, qwordPattern(candidate), nil,
+        moduleBase, moduleBase + moduleSize - 8, "", fsmAligned, "8",
+        true, false, false, false)
+    scan.waitTillDone()
+    local found = createFoundList(scan)
+    found.initialize()
+
+    for i = 0, found.Count - 1 do
+        local slot = getAddress(found.Address[i])
+        if readQword(slot) == candidate then
+            table.insert(chaosButtonSlots, slot)
+        end
+    end
+    found.destroy()
+    scan.destroy()
+
+    if #chaosButtonSlots &gt; 0 then
+        chaosButtonTarget = candidate
+        break
     end
 end
 
-found.destroy()
-scan.destroy()
-
-chaosButtonTarget = target
 chaosButtonHookAddress = hookAddress
+if chaosButtonTarget then
+    writeQword(originalSlot, chaosButtonTarget)
+    for _, slot in ipairs(chaosButtonSlots) do writeQword(slot, hookAddress) end
+end
+
+if chaosButtonTimer then chaosButtonTimer.destroy() end
+chaosButtonTimer = createTimer(nil)
+chaosButtonTimer.Interval = 250
+chaosButtonTimer.OnTimer = function()
+    if not chaosButtonSlots or not chaosButtonHookAddress then return end
+    for _, slot in ipairs(chaosButtonSlots) do
+        if readQword(slot) ~= chaosButtonHookAddress then
+            writeQword(slot, chaosButtonHookAddress)
+        end
+    end
+end
+chaosButtonTimer.Enabled = true
 
 function chaosButtonRestore()
+    if chaosButtonTimer then chaosButtonTimer.destroy() end
+    chaosButtonTimer = nil
     if chaosButtonSlots and chaosButtonTarget then
         for _, slot in ipairs(chaosButtonSlots) do
             if readQword(slot) == chaosButtonHookAddress then
@@ -50133,7 +50198,7 @@ end
 if #chaosButtonSlots == 0 then
     chaosButtonRestore()
     chaosButtonRestore = nil
-    print("Chaos Mod: Elden Ring XInput import was not found")
+    print("Chaos Mod: Elden Ring XInput/GetStateEx import was not found")
 else
     print("Chaos Mod: controller buttons scrambled")
 end
@@ -50182,8 +50247,8 @@ local runtime = getAddressList().getMemoryRecordByID(1987710097)
 if runtime and not runtime.Active then runtime.Active = true end
 if chaosSpawnPresets then
     chaosSpawnPresets({
-        {preset="CHAOS INVADER ANASTASIA", x=4, z=4},
-        {preset="CHAOS INVADER VYKE", x=-4, z=4}
+        {preset="CHAOS INVADER ANASTASIA", x=4, z=4, up=1.5, alliance=6, phantom=2},
+        {preset="CHAOS INVADER VYKE", x=-4, z=4, up=1.5, alliance=6, phantom=2}
     })
 end
 disableMemrec(memrec)
@@ -50194,7 +50259,7 @@ disableMemrec(memrec)
             </CheatEntry>
             <CheatEntry>
               <ID>1987710108</ID>
-              <Description>"]POT ENEMIES"</Description>
+              <Description>"]5 BIG POT ENEMIES"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -50203,9 +50268,11 @@ local runtime = getAddressList().getMemoryRecordByID(1987710097)
 if runtime and not runtime.Active then runtime.Active = true end
 if chaosSpawnPresets then
     chaosSpawnPresets({
-        {preset="CHAOS POT ENEMY", x=3, z=2},
-        {preset="CHAOS POT ENEMY", x=-3, z=2},
-        {preset="CHAOS POT ENEMY", x=0, z=-3}
+        {preset="CHAOS BIG POT ENEMY", x=4, z=2, alliance=6},
+        {preset="CHAOS BIG POT ENEMY", x=-4, z=2, alliance=6},
+        {preset="CHAOS BIG POT ENEMY", x=0, z=-4, alliance=6},
+        {preset="CHAOS BIG POT ENEMY", x=5, z=-3, alliance=6},
+        {preset="CHAOS BIG POT ENEMY", x=-5, z=-3, alliance=6}
     })
 end
 disableMemrec(memrec)
@@ -50287,33 +50354,81 @@ chaosRollTaxTimer = nil
 if syntaxcheck then return end
 if chaosPacifistTimer then chaosPacifistTimer.destroy() end
 local attackRecord = getAddressList().getMemoryRecordByID(1987710099)
+local animationRecord = getAddressList().getMemoryRecordByID(1337212445)
+local fallbackAnimationRecord = getAddressList().getMemoryRecordByID(1337212620)
+local rollStateRecord = getAddressList().getMemoryRecordByID(1987710098)
 local hpRecord = getAddressList().getMemoryRecordByID(1337192613)
 local maxHpRecord = getAddressList().getMemoryRecordByID(1337193290)
+local fpRecord = getAddressList().getMemoryRecordByID(1337193293)
+local staminaRecord = getAddressList().getMemoryRecordByID(1337193296)
 local lastAttack = -1
 local wasRequestingAttack = false
+local lastAnimation = nil
+local lastFp = nil
+local lastStamina = nil
 local lastPenaltyAt = 0
 
+local function readRecordInteger(record, signed)
+    local address = record and record.getCurrentAddress()
+    if not address or address == 0 then return nil end
+    return readInteger(address, signed or false)
+end
+
+local function applyPacifistPenalty(now)
+    if now - lastPenaltyAt &lt; 180 then return end
+    local hpAddress = hpRecord and hpRecord.getCurrentAddress()
+    local maxHpAddress = maxHpRecord and maxHpRecord.getCurrentAddress()
+    local hp = hpAddress and hpAddress ~= 0 and readInteger(hpAddress)
+    local maxHp = maxHpAddress and maxHpAddress ~= 0 and readInteger(maxHpAddress)
+    if hp and maxHp and hp &gt; 0 then
+        writeInteger(hpAddress, math.max(0, hp - math.max(1, math.floor(maxHp * 0.03))))
+        lastPenaltyAt = now
+    end
+end
+
+local function looksLikeAttackAnimation(animation)
+    if not animation then return false end
+    -- Player locomotion is below this range, rolls are around 27000 and
+    -- gestures/interactions are 50000+. These bands cover normal, mounted,
+    -- jumping and weapon-skill attack animations.
+    return (animation &gt;= 3000 and animation &lt; 17000)
+        or (animation &gt;= 20000 and animation &lt; 26000)
+end
+
 chaosPacifistTimer = createTimer(nil)
-chaosPacifistTimer.Interval = 10
+chaosPacifistTimer.Interval = 15
 chaosPacifistTimer.OnTimer = function()
-    local attackAddress = attackRecord and attackRecord.getCurrentAddress()
-    local attack = attackAddress and readInteger(attackAddress, true) or -1
+    local attack = readRecordInteger(attackRecord, true) or -1
     local requestingAttack = attack &gt; 0
     local now = getTickCount()
+    local animation = readRecordInteger(animationRecord, false)
+        or readRecordInteger(fallbackAnimationRecord, true)
+    local fp = readRecordInteger(fpRecord, false)
+    local stamina = readRecordInteger(staminaRecord, false)
+    local rollStateAddress = rollStateRecord and rollStateRecord.getCurrentAddress()
+    local rollState = rollStateAddress and rollStateAddress ~= 0
+        and readBytes(rollStateAddress, 1, false)
+    local rolling = rollState and (math.floor(rollState / 2) % 2 == 1)
 
     if requestingAttack and (not wasRequestingAttack or attack ~= lastAttack)
-        and now - lastPenaltyAt &gt; 120 then
-        local hpAddress = hpRecord and hpRecord.getCurrentAddress()
-        local maxHpAddress = maxHpRecord and maxHpRecord.getCurrentAddress()
-        local hp = hpAddress and readInteger(hpAddress)
-        local maxHp = maxHpAddress and readInteger(maxHpAddress)
-        if hp and maxHp and hp &gt; 0 then
-            writeInteger(hpAddress, math.max(0, hp - math.max(1, math.floor(maxHp * 0.03))))
-            lastPenaltyAt = now
+        and now - lastPenaltyAt &gt;= 180 then
+        applyPacifistPenalty(now)
+    else
+        -- Request AttackAnimID is version-sensitive. Resource consumption plus
+        -- a newly-started attack animation is the fallback for current builds.
+        local fpSpent = fp and lastFp and fp &lt; lastFp
+        local staminaSpent = stamina and lastStamina and stamina &lt; lastStamina
+        local animationStarted = animation and animation ~= lastAnimation
+        if not rolling and ((fpSpent and animationStarted)
+            or (staminaSpent and animationStarted and looksLikeAttackAnimation(animation))) then
+            applyPacifistPenalty(now)
         end
     end
     lastAttack = attack
     wasRequestingAttack = requestingAttack
+    lastAnimation = animation
+    lastFp = fp
+    lastStamina = stamina
 end
 chaosPacifistTimer.Enabled = true
 {$asm}
@@ -50328,7 +50443,7 @@ chaosPacifistTimer = nil
             </CheatEntry>
             <CheatEntry>
               <ID>1987710111</ID>
-              <Description>"]SPAWN 3 ALBINAURICS"</Description>
+              <Description>"]SPAWN 6 ALBINAURICS"</Description>
               <VariableType>Auto Assembler Script</VariableType>
               <AssemblerScript>[ENABLE]
 {$lua}
@@ -50337,9 +50452,12 @@ local runtime = getAddressList().getMemoryRecordByID(1987710097)
 if runtime and not runtime.Active then runtime.Active = true end
 if chaosSpawnPresets then
     chaosSpawnPresets({
-        {preset="CHAOS ALBINAURIC", x=4, z=2},
-        {preset="CHAOS ALBINAURIC", x=-4, z=2},
-        {preset="CHAOS ALBINAURIC", x=0, z=-4}
+        {preset="CHAOS ALBINAURIC", x=4, z=2, up=0.8, alliance=6},
+        {preset="CHAOS ALBINAURIC", x=-4, z=2, up=0.8, alliance=6},
+        {preset="CHAOS ALBINAURIC", x=0, z=-4, up=0.8, alliance=6},
+        {preset="CHAOS ALBINAURIC", x=6, z=-1, up=0.8, alliance=6},
+        {preset="CHAOS ALBINAURIC", x=-6, z=-1, up=0.8, alliance=6},
+        {preset="CHAOS ALBINAURIC", x=0, z=6, up=0.8, alliance=6}
     })
 end
 disableMemrec(memrec)
@@ -50358,7 +50476,7 @@ if syntaxcheck then return end
 local runtime = getAddressList().getMemoryRecordByID(1987710097)
 if runtime and not runtime.Active then runtime.Active = true end
 if chaosSpawnPresets then
-    chaosSpawnPresets({{preset="CHAOS PATCHES ENEMY", behind=true}})
+    chaosSpawnPresets({{preset="CHAOS PATCHES ENEMY", behind=true, up=1.5, alliance=6, phantom=2}})
 end
 disableMemrec(memrec)
 {$asm}
@@ -50432,6 +50550,249 @@ chaosDamageTeleportTimer = nil
 {$asm}
 </AssemblerScript>
               <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>130</Key><Key>52</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710114</ID>
+              <Description>"]SPAWN 2 LASER GOLEMS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnPresets then
+    chaosSpawnPresets({
+        {preset="CHAOS LASER GOLEM", x=8, z=4, up=1, alliance=6},
+        {preset="CHAOS LASER GOLEM", x=-8, z=4, up=1, alliance=6}
+    })
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>51</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710115</ID>
+              <Description>"]SPAWN WALKING MAUSOLEUM"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnPresets then
+    chaosSpawnPresets({{preset="CHAOS WALKING MAUSOLEUM", x=0, z=15, up=2, alliance=6}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>52</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710116</ID>
+              <Description>"]SPAWN BANISHED KNIGHTS"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnPresets then
+    chaosSpawnPresets({
+        {preset="CHAOS BANISHED COMMUNION HALBERD", x=5, z=5, up=1.2, alliance=6},
+        {preset="CHAOS BANISHED COMMUNION SWORD", x=-5, z=5, up=1.2, alliance=6},
+        {preset="CHAOS BANISHED COMMUNION DUAL", x=7, z=-1, up=1.2, alliance=6},
+        {preset="CHAOS BANISHED COMMUNION CASTER", x=-7, z=-1, up=1.2, alliance=6},
+        {preset="CHAOS BANISHED PHANTOM HALBERD", x=4, z=-6, up=1.2, alliance=6},
+        {preset="CHAOS BANISHED PHANTOM DUAL", x=-4, z=-6, up=1.2, alliance=6}
+    })
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>53</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710117</ID>
+              <Description>"]SPAWN BASE SERPENT MESSMER"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+local runtime = getAddressList().getMemoryRecordByID(1987710097)
+if runtime and not runtime.Active then runtime.Active = true end
+if chaosSpawnPresets then
+    chaosSpawnPresets({{preset="CHAOS BASE SERPENT MESSMER", x=0, z=10, up=1.5, alliance=6}})
+end
+disableMemrec(memrec)
+{$asm}
+[DISABLE]
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>54</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710118</ID>
+              <Description>"]RANDOM EMOTES"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosEmoteTimer then chaosEmoteTimer.destroy() end
+
+local animationRecord = getAddressList().getMemoryRecordByID(1337279546)
+local animationAddress = animationRecord and animationRecord.getCurrentAddress()
+local emotes = {
+    80000, 80010, 80020, 80030, 80040, 80060, 80070, 80080,
+    80090, 80100, 80200, 80210, 80220, 80230, 80240, 80250,
+    80300, 80400, 80410, 80500, 80510, 80520, 80530, 80600,
+    80700, 80710, 80720, 80730
+}
+
+if animationAddress and animationAddress ~= 0 then
+    math.randomseed(os.time() + getTickCount())
+    local function playRandomEmote()
+        local currentAddress = animationRecord and animationRecord.getCurrentAddress()
+        if currentAddress and currentAddress ~= 0 then
+            writeInteger(currentAddress, emotes[math.random(#emotes)])
+        end
+    end
+    playRandomEmote()
+    chaosEmoteTimer = createTimer(nil)
+    chaosEmoteTimer.Interval = 2200
+    chaosEmoteTimer.OnTimer = playRandomEmote
+    chaosEmoteTimer.Enabled = true
+end
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosEmoteTimer then chaosEmoteTimer.destroy() end
+chaosEmoteTimer = nil
+local animationRecord = getAddressList().getMemoryRecordByID(1337279546)
+local animationAddress = animationRecord and animationRecord.getCurrentAddress()
+if animationAddress and animationAddress ~= 0 then
+    writeInteger(animationAddress, 0)
+end
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>55</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710119</ID>
+              <Description>"]NAKED RAINBOW"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosNakedTimer then chaosNakedTimer.destroy() end
+
+local equipmentIds = {1337193108, 1337193109, 1337193110, 1337193111}
+local skinIds = {1337213103, 1337213104, 1337213105}
+chaosNakedOriginal = {equipment={}, skin={}}
+
+for _, id in ipairs(equipmentIds) do
+    local record = getAddressList().getMemoryRecordByID(id)
+    local address = record and record.getCurrentAddress()
+    if address and address ~= 0 then
+        chaosNakedOriginal.equipment[id] = readInteger(address)
+        writeInteger(address, -1)
+    end
+end
+for _, id in ipairs(skinIds) do
+    local record = getAddressList().getMemoryRecordByID(id)
+    local address = record and record.getCurrentAddress()
+    if address and address ~= 0 then
+        chaosNakedOriginal.skin[id] = readBytes(address, 1, false)
+    end
+end
+
+math.randomseed(os.time() + getTickCount())
+local lastColorAt = 0
+chaosNakedTimer = createTimer(nil)
+chaosNakedTimer.Interval = 100
+chaosNakedTimer.OnTimer = function()
+    for _, id in ipairs(equipmentIds) do
+        local record = getAddressList().getMemoryRecordByID(id)
+        local address = record and record.getCurrentAddress()
+        if address and address ~= 0 then writeInteger(address, -1) end
+    end
+
+    local now = getTickCount()
+    if now - lastColorAt &gt;= 1000 then
+        for _, id in ipairs(skinIds) do
+            local record = getAddressList().getMemoryRecordByID(id)
+            local address = record and record.getCurrentAddress()
+            if address and address ~= 0 then writeBytes(address, math.random(0, 255)) end
+        end
+        lastColorAt = now
+    end
+end
+chaosNakedTimer.Enabled = true
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosNakedTimer then chaosNakedTimer.destroy() end
+chaosNakedTimer = nil
+
+if chaosNakedOriginal then
+    for id, value in pairs(chaosNakedOriginal.equipment or {}) do
+        local record = getAddressList().getMemoryRecordByID(id)
+        local address = record and record.getCurrentAddress()
+        if address and address ~= 0 then writeInteger(address, value) end
+    end
+    for id, value in pairs(chaosNakedOriginal.skin or {}) do
+        local record = getAddressList().getMemoryRecordByID(id)
+        local address = record and record.getCurrentAddress()
+        if address and address ~= 0 then writeBytes(address, value) end
+    end
+end
+chaosNakedOriginal = nil
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>56</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
+            </CheatEntry>
+            <CheatEntry>
+              <ID>1987710120</ID>
+              <Description>"]BARELY MOVING"</Description>
+              <VariableType>Auto Assembler Script</VariableType>
+              <AssemblerScript>[ENABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosBarelyMovingTimer then chaosBarelyMovingTimer.destroy() end
+
+local speedRecord = getAddressList().getMemoryRecordByID(1337103861)
+local speedAddress = speedRecord and speedRecord.getCurrentAddress()
+chaosBarelyMovingOriginal = speedAddress and speedAddress ~= 0 and readFloat(speedAddress)
+
+local function applyBarelyMoving()
+    local address = speedRecord and speedRecord.getCurrentAddress()
+    if address and address ~= 0 then writeFloat(address, 0.03) end
+end
+
+applyBarelyMoving()
+chaosBarelyMovingTimer = createTimer(nil)
+chaosBarelyMovingTimer.Interval = 100
+chaosBarelyMovingTimer.OnTimer = applyBarelyMoving
+chaosBarelyMovingTimer.Enabled = true
+{$asm}
+[DISABLE]
+{$lua}
+if syntaxcheck then return end
+if chaosBarelyMovingTimer then chaosBarelyMovingTimer.destroy() end
+chaosBarelyMovingTimer = nil
+local speedRecord = getAddressList().getMemoryRecordByID(1337103861)
+local speedAddress = speedRecord and speedRecord.getCurrentAddress()
+if speedAddress and speedAddress ~= 0 and chaosBarelyMovingOriginal ~= nil then
+    writeFloat(speedAddress, chaosBarelyMovingOriginal)
+end
+chaosBarelyMovingOriginal = nil
+{$asm}
+</AssemblerScript>
+              <Hotkeys><Hotkey><Action>Toggle Activation</Action><Keys><Key>131</Key><Key>57</Key></Keys><ID>0</ID></Hotkey></Hotkeys>
             </CheatEntry>
           </CheatEntries>
         </CheatEntry>
@@ -53295,16 +53656,16 @@ dealloc(CreateChr_)
                 </CheatEntry>
                 <CheatEntry>
                   <ID>1987710207</ID>
-                  <Description>"CHAOS POT ENEMY"</Description>
+                  <Description>"CHAOS BIG POT ENEMY"</Description>
                   <VariableType>Auto Assembler Script</VariableType>
                   <AssemblerScript>[ENABLE]
 
 [[WorldChrMan]+1E648]+100:
-  db 63 00 34 00 34 00 39 00 31 00
+  db 63 00 34 00 34 00 39 00 30 00
 
 [[WorldChrMan]+1E648]+F0:
-  dd #44910020
-  dd #44910000
+  dd #44900020
+  dd #44900000
 
 [[WorldChrMan]+1E648]+B0:
   readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
@@ -53361,6 +53722,204 @@ dealloc(CreateChr_)
 
 [[WorldChrMan]+1E648]+178:
   db 01
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710210</ID>
+                  <Description>"CHAOS LASER GOLEM"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 34 00 36 00 36 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #46604142
+  dd #46604000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710211</ID>
+                  <Description>"CHAOS WALKING MAUSOLEUM"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 34 00 34 00 35 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #44500020
+  dd #44500000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710212</ID>
+                  <Description>"CHAOS BANISHED COMMUNION HALBERD"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 33 00 30 00 31 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #30102172
+  dd #30102000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710213</ID>
+                  <Description>"CHAOS BANISHED COMMUNION SWORD"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 33 00 30 00 31 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #30100140
+  dd #30100000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710214</ID>
+                  <Description>"CHAOS BANISHED COMMUNION DUAL"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 33 00 30 00 31 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #30101140
+  dd #30101000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710215</ID>
+                  <Description>"CHAOS BANISHED COMMUNION CASTER"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 33 00 30 00 31 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #30100800
+  dd #30100000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710216</ID>
+                  <Description>"CHAOS BANISHED PHANTOM HALBERD"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 33 00 30 00 31 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #30102651
+  dd #30102000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710217</ID>
+                  <Description>"CHAOS BANISHED PHANTOM DUAL"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 33 00 30 00 31 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #30101651
+  dd #30101000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
+
+[DISABLE]
+</AssemblerScript>
+                </CheatEntry>
+                <CheatEntry>
+                  <ID>1987710218</ID>
+                  <Description>"CHAOS BASE SERPENT MESSMER"</Description>
+                  <VariableType>Auto Assembler Script</VariableType>
+                  <AssemblerScript>[ENABLE]
+
+[[WorldChrMan]+1E648]+100:
+  db 63 00 35 00 31 00 34 00 30 00
+
+[[WorldChrMan]+1E648]+F0:
+  dd #51400099
+  dd #51400000
+
+[[WorldChrMan]+1E648]+B0:
+  readmem([[[[WorldChrMan]+1E508]+190]+68]+70,12)
+
+[[WorldChrMan]+1E648]+178:
+  db 00
 
 [DISABLE]
 </AssemblerScript>

@@ -83,10 +83,17 @@ Minimum Brightness
 Scrambled Buttons
 Spawn 2 Golems
 Hostile Invaders
-Pot Enemies
+5 Big Pot Enemies
 Roll Tax
 Pacifist Player
-Spawn 3 Albinaurics
+Spawn 6 Albinaurics
 Surprise Patches
 Damage Teleport
+Spawn 2 Laser Golems
+Spawn Walking Mausoleum
+Spawn Banished Knights
+Spawn Base Serpent Messmer
+Random Emotes
+Naked Rainbow
+Barely Moving
 ```

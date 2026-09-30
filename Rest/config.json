@@ -341,7 +341,7 @@
             "basechance": 30,
             "enabled": true
         },
-        "Pot Enemies": {
+        "5 Big Pot Enemies": {
             "chance": 45,
             "basechance": 45,
             "enabled": true
@@ -356,7 +356,7 @@
             "basechance": 45,
             "enabled": true
         },
-        "Spawn 3 Albinaurics": {
+        "Spawn 6 Albinaurics": {
             "chance": 45,
             "basechance": 45,
             "enabled": true
@@ -369,6 +369,41 @@
         "Damage Teleport": {
             "chance": 35,
             "basechance": 35,
+            "enabled": true
+        },
+        "Spawn 2 Laser Golems": {
+            "chance": 20,
+            "basechance": 20,
+            "enabled": true
+        },
+        "Spawn Walking Mausoleum": {
+            "chance": 8,
+            "basechance": 8,
+            "enabled": true
+        },
+        "Spawn Banished Knights": {
+            "chance": 18,
+            "basechance": 18,
+            "enabled": true
+        },
+        "Spawn Base Serpent Messmer": {
+            "chance": 10,
+            "basechance": 10,
+            "enabled": true
+        },
+        "Random Emotes": {
+            "chance": 50,
+            "basechance": 50,
+            "enabled": true
+        },
+        "Naked Rainbow": {
+            "chance": 35,
+            "basechance": 35,
+            "enabled": true
+        },
+        "Barely Moving": {
+            "chance": 40,
+            "basechance": 40,
             "enabled": true
         }
     }

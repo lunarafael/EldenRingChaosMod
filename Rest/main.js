@@ -561,7 +561,7 @@ function processKeypresses(actionname) {
         .sendBatch()
 
     }else if(actionname === "Horse Bomb"){
-        ks.sendCombination(['F24', '4']);
+        toggleKeyForRound(['F24', '4']);
 
     }else if(actionname === "Invert Camera Control"){
         toggleKeyForRound(['F24', '5']);
@@ -596,7 +596,7 @@ function processKeypresses(actionname) {
     }else if(actionname === "Hostile Invaders"){
         ks.sendCombination(['F18', '7']);
 
-    }else if(actionname === "Pot Enemies"){
+    }else if(actionname === "5 Big Pot Enemies"){
         ks.sendCombination(['F18', '8']);
 
     }else if(actionname === "Roll Tax"){
@@ -605,7 +605,7 @@ function processKeypresses(actionname) {
     }else if(actionname === "Pacifist Player"){
         toggleKeyForRound(['F19', '1']);
 
-    }else if(actionname === "Spawn 3 Albinaurics"){
+    }else if(actionname === "Spawn 6 Albinaurics"){
         ks.sendCombination(['F19', '2']);
 
     }else if(actionname === "Surprise Patches"){
@@ -613,6 +613,27 @@ function processKeypresses(actionname) {
 
     }else if(actionname === "Damage Teleport"){
         toggleKeyForRound(['F19', '4']);
+
+    }else if(actionname === "Spawn 2 Laser Golems"){
+        ks.sendCombination(['F20', '3']);
+
+    }else if(actionname === "Spawn Walking Mausoleum"){
+        ks.sendCombination(['F20', '4']);
+
+    }else if(actionname === "Spawn Banished Knights"){
+        ks.sendCombination(['F20', '5']);
+
+    }else if(actionname === "Spawn Base Serpent Messmer"){
+        ks.sendCombination(['F20', '6']);
+
+    }else if(actionname === "Random Emotes"){
+        toggleKeyForRound(['F20', '7']);
+
+    }else if(actionname === "Naked Rainbow"){
+        toggleKeyForRound(['F20', '8']);
+
+    }else if(actionname === "Barely Moving"){
+        toggleKeyForRound(['F20', '9']);
 
     }
 
