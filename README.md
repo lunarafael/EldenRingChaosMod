@@ -79,21 +79,22 @@ Spawn Godrick
 Spawn Godfrey
 Spawn Mohg
 Spawn Placidusax
-Minimum Brightness
-Scrambled Buttons
-Spawn 2 Golems
-Hostile Invaders
+Growing Madness
+Growing Scarlet Rot
+Spawn 2 Furnace Golems
+Mega Fat Player
 5 Big Pot Enemies
 Roll Tax
-Pacifist Player
 Spawn 6 Albinaurics
-Surprise Patches
 Damage Teleport
 Spawn 2 Laser Golems
 Spawn Walking Mausoleum
 Spawn Banished Knights
-Spawn Base Serpent Messmer
+Spawn Messmer Phase 2
 Random Emotes
 Naked Rainbow
 Barely Moving
+Drunk Camera
+Tunnel Vision
+Delayed Controls
 ```

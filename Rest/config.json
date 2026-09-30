@@ -321,24 +321,24 @@
             "basechance": 10,
             "enabled": true
         },
-        "Minimum Brightness": {
-            "chance": 55,
-            "basechance": 55,
+        "Growing Madness": {
+            "chance": 45,
+            "basechance": 45,
             "enabled": true
         },
-        "Scrambled Buttons": {
-            "chance": 35,
-            "basechance": 35,
+        "Growing Scarlet Rot": {
+            "chance": 40,
+            "basechance": 40,
             "enabled": true
         },
-        "Spawn 2 Golems": {
-            "chance": 25,
-            "basechance": 25,
+        "Spawn 2 Furnace Golems": {
+            "chance": 12,
+            "basechance": 12,
             "enabled": true
         },
-        "Hostile Invaders": {
-            "chance": 30,
-            "basechance": 30,
+        "Mega Fat Player": {
+            "chance": 45,
+            "basechance": 45,
             "enabled": true
         },
         "5 Big Pot Enemies": {
@@ -351,19 +351,9 @@
             "basechance": 55,
             "enabled": true
         },
-        "Pacifist Player": {
-            "chance": 45,
-            "basechance": 45,
-            "enabled": true
-        },
         "Spawn 6 Albinaurics": {
             "chance": 45,
             "basechance": 45,
-            "enabled": true
-        },
-        "Surprise Patches": {
-            "chance": 40,
-            "basechance": 40,
             "enabled": true
         },
         "Damage Teleport": {
@@ -386,7 +376,7 @@
             "basechance": 18,
             "enabled": true
         },
-        "Spawn Base Serpent Messmer": {
+        "Spawn Messmer Phase 2": {
             "chance": 10,
             "basechance": 10,
             "enabled": true
@@ -404,6 +394,21 @@
         "Barely Moving": {
             "chance": 40,
             "basechance": 40,
+            "enabled": true
+        },
+        "Drunk Camera": {
+            "chance": 45,
+            "basechance": 45,
+            "enabled": true
+        },
+        "Tunnel Vision": {
+            "chance": 40,
+            "basechance": 40,
+            "enabled": true
+        },
+        "Delayed Controls": {
+            "chance": 45,
+            "basechance": 45,
             "enabled": true
         }
     }

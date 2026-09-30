@@ -584,17 +584,17 @@ function processKeypresses(actionname) {
     }else if(actionname === "Spawn Placidusax"){
         ks.sendCombination(['F17', '9']);
 
-    }else if(actionname === "Minimum Brightness"){
+    }else if(actionname === "Growing Madness"){
         toggleKeyForRound(['F18', '4']);
 
-    }else if(actionname === "Scrambled Buttons"){
+    }else if(actionname === "Growing Scarlet Rot"){
         toggleKeyForRound(['F18', '5']);
 
-    }else if(actionname === "Spawn 2 Golems"){
+    }else if(actionname === "Spawn 2 Furnace Golems"){
         ks.sendCombination(['F18', '6']);
 
-    }else if(actionname === "Hostile Invaders"){
-        ks.sendCombination(['F18', '7']);
+    }else if(actionname === "Mega Fat Player"){
+        toggleKeyForRound(['F18', '7']);
 
     }else if(actionname === "5 Big Pot Enemies"){
         ks.sendCombination(['F18', '8']);
@@ -602,14 +602,8 @@ function processKeypresses(actionname) {
     }else if(actionname === "Roll Tax"){
         toggleKeyForRound(['F18', '9']);
 
-    }else if(actionname === "Pacifist Player"){
-        toggleKeyForRound(['F19', '1']);
-
     }else if(actionname === "Spawn 6 Albinaurics"){
         ks.sendCombination(['F19', '2']);
-
-    }else if(actionname === "Surprise Patches"){
-        ks.sendCombination(['F19', '3']);
 
     }else if(actionname === "Damage Teleport"){
         toggleKeyForRound(['F19', '4']);
@@ -623,7 +617,7 @@ function processKeypresses(actionname) {
     }else if(actionname === "Spawn Banished Knights"){
         ks.sendCombination(['F20', '5']);
 
-    }else if(actionname === "Spawn Base Serpent Messmer"){
+    }else if(actionname === "Spawn Messmer Phase 2"){
         ks.sendCombination(['F20', '6']);
 
     }else if(actionname === "Random Emotes"){
@@ -634,6 +628,15 @@ function processKeypresses(actionname) {
 
     }else if(actionname === "Barely Moving"){
         toggleKeyForRound(['F20', '9']);
+
+    }else if(actionname === "Drunk Camera"){
+        toggleKeyForRound(['F19', '3']);
+
+    }else if(actionname === "Tunnel Vision"){
+        toggleKeyForRound(['F19', '5']);
+
+    }else if(actionname === "Delayed Controls"){
+        toggleKeyForRound(['F19', '6']);
 
     }
 
